@@ -18,7 +18,7 @@ COMMAND_FILE = os.path.join(SCRIPT_DIR, "Shader_Compile_Command_Sorted.txt")
 SOURCE_DIR = SCRIPT_DIR + "/"          # forward slashes
 COMPILE_DIR = os.path.join(SCRIPT_DIR, "COMPILED/")
 STATE_FILE = os.path.join(SCRIPT_DIR, "compile_shaders_linux.txt")
-NOMAD_PLATFORM = os.environ.get("NOMAD_PLATFORM", "LINUX")  # game runs under Wine-on-Linux, so DXBC target is Windows ABI
+NOMAD_PLATFORM = os.environ.get("NOMAD_PLATFORM", "WINDOWS")  # DXBC target is Windows ABI (game runs on Windows); the game's own build used NOMAD_PLATFORM_WINDOWS (gates the _BOUND constants like ReflectionGIControl). Override to LINUX only for platform-gate testing.
 
 def get_shader_compile_arg(cmd: str) -> str:
     fo_pos = cmd.find("/Fo")
@@ -88,6 +88,9 @@ for line in command_lines:
 print(f"Found {len(jobs)} compile jobs for '{shader_family}'")
 engine_dir = os.path.join(COMPILE_DIR, "engine")
 shutil.rmtree(engine_dir, ignore_errors=True)
+flog_path = os.path.join(COMPILE_DIR, "compile_failures.txt")
+if os.path.exists(flog_path):
+    os.remove(flog_path)
 
 def compile_shader(job):
     out_dir = os.path.dirname(job["target"])
@@ -110,6 +113,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=mw) as executor:
         if rc == 0: ok += 1
         else:
             fail += 1
+            with open(os.path.join(COMPILE_DIR, "compile_failures.txt"), "a") as flog:
+                flog.write(f"=== {fut[f]['source']} ===\n{err}\n")
             if err and fail <= 5:
                 print(f"FAIL: {fut[f]['source']}: {err.strip()[-200:]}")
         if done % 50 == 0:
