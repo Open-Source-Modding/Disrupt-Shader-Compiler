@@ -87,7 +87,10 @@ for line in command_lines:
 
 print(f"Found {len(jobs)} compile jobs for '{shader_family}'")
 engine_dir = os.path.join(COMPILE_DIR, "engine")
-shutil.rmtree(engine_dir, ignore_errors=True)
+# Resume across restarts: DON'T wipe existing output if some shaders already compiled.
+# (The interrupted full-tree run left partial .pso; keep them and skip on re-run.)
+if not os.path.isdir(engine_dir):
+    os.makedirs(engine_dir, exist_ok=True)
 flog_path = os.path.join(COMPILE_DIR, "compile_failures.txt")
 if os.path.exists(flog_path):
     os.remove(flog_path)
@@ -95,6 +98,11 @@ if os.path.exists(flog_path):
 def compile_shader(job):
     out_dir = os.path.dirname(job["target"])
     os.makedirs(out_dir, exist_ok=True)
+    # Skip if already compiled successfully (resume checkpoint) - the target .pso
+    # existing means it was done in a prior run. (Assumes a given target path maps
+    # 1:1 to a shader permutation, which it does: obj/hXX/pixel_<id>.pso.)
+    if os.path.exists(job["target"]):
+        return 0, ""
     try:
         r = subprocess.run([DXC] + shlex.split(job["compile_arg"]), shell=False,
                             capture_output=True, text=True, timeout=60)
