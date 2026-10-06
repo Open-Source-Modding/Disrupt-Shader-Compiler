@@ -1,0 +1,7 @@
+AGENTS.md
+COMPILED
+obj
+__pycache__
+
+# Shader sources are the game's own files: unpack them yourself, not published here
+/engine/
