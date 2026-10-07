@@ -1,31 +1,59 @@
-# WATCH_DOGS 1 Shader Compiler
-This repo contains the tooling to recompile the shader database for WATCH_DOGS 1 from your own copy of the game.
+# WATCH_DOGS Shader Compiler
 
-## Requirements:
-1. [Windows SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/)
-2. [Python](https://www.python.org/downloads/)
+Recompiles the shader database for WATCH_DOGS 1 from the game's own HLSL sources.
+The scripts drive `fxc.exe` over each shader family and write the compiled objects
+with the header stub the engine loads.
 
-## Getting the shader sources
+The `.fx` sources belong to the game and are not in this repository. Unpack your own copy.
 
-The shader sources are the game's own files and are not shipped here. Unpack them from
-your copy of the game first:
+## Requirements
 
-1. Unpack `Watch_Dogs\data_win64\shadersobj.fat` with [Gibbed.Disrupt](https://github.com/gibbed/Gibbed.Disrupt)
-2. Copy the unpacked `engine` folder into this repo's root, next to `CompileShaders.py`
+1. [Windows SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) for `fxc.exe`
+2. [Python](https://www.python.org/downloads/) 3
 
-The scripts expect `engine\shaders\...` under the repo root, and family names come from
-`engine\shaders\meta\filelist.meta.xml.txt` in that unpacked folder.
+## Get the shader sources
 
-## Compilation
-WARNING: You must recompile all shaders once before compiling a specific shader family to ensure consistent input/output signatures
-- Clone the entire repo and place the unpacked `engine` folder in its root
-- Add Windows SDK x64 path to your `PATH` environment variable (e.g. `F:\Windows Kits\10\bin\10.0.26100.0\x64\`)
-- Run `CompileShaders.py`
-- Enter a shader family you wish to compile (e.g. `Mesh_DriverGeneric`, family names can be found in `engine\shaders\meta\filelist.meta.xml.txt`)
-- Or if you need to compile all shaders, type in `.fx` should compile everything
+1. Unpack `[WATCH_DOGS Install Directory]\data_win64\shaders.dat` with
+   [Gibbed.Disrupt](https://github.com/Open-Source-Modding/Gibbed.Disrupt).
+2. Copy the unpacked `engine` folder into this repository's root, next to `CompileShaders.py`.
 
-## Loading shaders from disk
-- You can unpack `Watch_Dogs\data_win64\shadersobj.fat` with gibbed.disrupt, rename both `shadersobj.fat` and `shadersobj.dat` to `shadersobj.fat.bak` and `shadersobj.dat.bak`
-- Move `Watch_Dogs\data_win64\shadersobj_unpack\engine` folder to `Watch_Dogs\data_win64\`
-- Game will load from disk shader files from now on
+The scripts read `engine\shaders\...` from the repository root. Shader family names
+live in `engine\shaders\meta\filelist.meta.xml.txt`.
 
+## Compile
+
+1. Add the Windows SDK x64 directory to `PATH`, for example
+   `F:\Windows Kits\10\bin\10.0.26100.0\x64\`.
+2. Run `CompileShaders.py`.
+3. Enter a shader family, for example `Mesh_DriverGeneric`. Enter `.fx` to build the
+   whole database.
+
+**Build the whole database once before you build a single family.** Families share
+input and output signatures, so a family built on its own disagrees with the rest and
+the game stops drawing.
+
+Compiled objects land in `COMPILED`, and the script resumes where it stopped if you
+run it again.
+
+## Load the compiled shaders
+
+1. Unpack `[WATCH_DOGS Install Directory]\data_win64\shadersobj.fat` with Gibbed.Disrupt.
+2. Rename `shadersobj.fat` to `shadersobj.fat.bak`, and `shadersobj.dat` to `shadersobj.dat.bak`.
+3. Move the unpacked `shadersobj_unpack\engine` folder into `[WATCH_DOGS Install Directory]\data_win64\`.
+
+The engine then reads shader files from disk.
+
+## Linux
+
+`compile_shaders_linux.py` is the Linux port. It calls DXC instead of `fxc.exe`, keeps
+paths in forward-slash form, and resolves the source filename case that the Windows
+command list gets wrong. Install the DirectX Shader Compiler, then either put `dxc` on
+`PATH` or set `DXC` to its full path and run:
+
+```bash
+python3 compile_shaders_linux.py Mesh_DriverGeneric
+```
+
+## License
+
+Public domain. See `LICENSE`.
